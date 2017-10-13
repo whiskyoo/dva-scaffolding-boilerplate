@@ -10,7 +10,9 @@ var path = require('path')
 var express = require('express')
 var webpack = require('webpack')
 var proxyMiddleware = require('http-proxy-middleware')
+{{#mock}}
 var mockMiddleware = require('./mock-middleware');
+{{/mock}}
 var webpackConfig = require('./webpack.dev.conf')
 
 // default port where dev server listens for incoming traffic
@@ -47,7 +49,7 @@ compiler.plugin('compilation', function (compilation) {
   })
 })
 
-
+{{#if mock}}
 if (process.env.PROXY_TYPE === 'mock') {
   // mock api requests
   app.use(mockMiddleware());
@@ -61,6 +63,16 @@ if (process.env.PROXY_TYPE === 'mock') {
     app.use(proxyMiddleware(options.filter || context, options))
   })
 }
+{{else}}
+// proxy api requests
+Object.keys(proxyTable).forEach(function (context) {
+  var options = proxyTable[context]
+  if (typeof options === 'string') {
+    options = { target: options }
+  }
+  app.use(proxyMiddleware(options.filter || context, options))
+})
+{{/if}}
 
 // handle fallback for HTML5 history API
 app.use(require('connect-history-api-fallback')())
